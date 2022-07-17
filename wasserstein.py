@@ -1,8 +1,10 @@
 import numpy as np
+import ot
+
 def distance(u_values, v_values, u_weights=None, v_weights=None):
     u_values, u_weights = np.asarray(u_values, dtype=float), np.asarray(u_weights, dtype=float)
     v_values, v_weights = np.asarray(v_values, dtype=float), np.asarray(v_weights, dtype=float)
-    # u_values==[0. 1. 2. 3.], v_sorter==[0. 1. 2. 3.]
+    # u_values==[0. 1. 2. 3.], v_value ==[0. 1. 2. 3.]
 
     u_sorter = np.argsort(u_values)
     v_sorter = np.argsort(v_values)
@@ -14,6 +16,7 @@ def distance(u_values, v_values, u_weights=None, v_weights=None):
 
     deltas = np.diff(all_values)
     # deltas==[0. 1. 0. 1. 0. 1. 0.]
+    # 隣り合う要素の差
 
     u_cdf_indices = u_values[u_sorter].searchsorted(all_values[:-1], 'right')
     v_cdf_indices = v_values[v_sorter].searchsorted(all_values[:-1], 'right')
@@ -37,3 +40,28 @@ v = [0,0,0,1]
 dists = range(len(u))
 print(stats.wasserstein_distance([0,1,2,3],[0,1,2,3], u, v))
 print(distance([0,1,2,3],[0,1,2,3], u, v))
+
+
+def _sinkhorn_distance(x, y, d):
+    """Compute the approximate optimal transportation distance of the given density distributions.
+    Parameters
+    ----------
+    x : (m,) np.ndarray
+        Source's distributions.
+    y : (n,) np.ndarray
+        Target's  distributions.
+    d : (m, n) np.ndarray
+        Shortest path matrix. ("Non - symmetric distance defined above.")
+    Returns
+
+    "Remark 1"
+    "Cost matrix in Sinkhorn algorithm is not assumed to be symmetric in general."
+    "Remark 2"
+    "Should we normalize the Grover walk before using this sinkhorn distance ?? or use the unbalanced ot in POT"
+    -------
+    m : float
+        Sinkhorn distance, an approximate "Signed" optimal transportation distance.
+    """
+
+    m = ot.sinkhorn2(x, y, d, 1e-1, method='sinkhorn')
+    return m
