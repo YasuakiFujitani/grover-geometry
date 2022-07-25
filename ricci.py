@@ -5,7 +5,7 @@ import ot
 def get_distr(node):  
     nbrs = list(G.neighbors(node))
     return [0] + [1 / len(nbrs)] * len(nbrs), [node] + nbrs       
-
+    
 def compute_ricci_curvature(G: nx.Graph):
     output={}
     for (source,target) in G.edges():
@@ -17,9 +17,19 @@ def compute_ricci_curvature(G: nx.Graph):
     nx.set_edge_attributes(G, output, "ricci")
     return output
 
-import networkx as nx
-G = nx.Graph([[0,1],[0,3],[1,2],[2,4],[4,1],[1,5],[3,2],[4,5],[1,6],[2,6]])
-print(G[0])
+
+
+# import networkx as nx
+# edges = [[0,1],[0,3],[1,2],[2,4],[4,1],[1,5],[3,2],[4,5],[1,6],[2,6]]
+# G = nx.Graph(edges)
+# compute_ricci_curvature(G)
+# for n1,n2 in list(G.edges):
+#         print("Ricci curvature of edge (%s,%s) is %f" % (n1 ,n2, G[n1][n2]["ricci"]))
+
+
+G=nx.DiGraph([[1,0],[0,1],[0,3],[1,2],[2,4],[4,1],[1,5],[3,2],[5,4],[6,5],[1,6],[2,6]])
 compute_ricci_curvature(G)
 for n1,n2 in list(G.edges):
         print("Ricci curvature of edge (%s,%s) is %f" % (n1 ,n2, G[n1][n2]["ricci"]))
+
+
