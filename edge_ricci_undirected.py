@@ -4,15 +4,12 @@
 from typing import List, Tuple
 import matplotlib.pyplot as plt
 import networkx as nx
-from networkx import DiGraph
 import ot
 import numpy as np
 import itertools
 
 
 class UndirectedEdgeGraph:
-    graph = nx.Graph
-
     def __init__(self, edges: List[Tuple[int, int]]) -> None:
         self.graph = nx.Graph(edges)
 
