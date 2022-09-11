@@ -31,6 +31,19 @@ class HyperGraph():
             distr += list(coined_distr[i] * np.array([2 / deg_e  - 1] + [2 / (deg_e)] * (deg_e - 1)))
         return distr, nbrs
 
+    def get_distr_classic(self, basis:Basis):
+        (node, _) = basis; 
+        coined_nbrs = [basis] + list(filter(lambda x: x[0]==node and x!=basis, self.bases))      
+        deg_n = len(coined_nbrs)
+        coined_distr = [1 / deg_n] * deg_n
+        nbrs = []; distr = []
+        for i in range(len(coined_nbrs)):
+            shifted_nbrs = [coined_nbrs[i]] + list(filter(lambda x: x[1]==coined_nbrs[i][1] and x!=coined_nbrs[i], self.bases))      
+            nbrs += shifted_nbrs
+            deg_e = len(shifted_nbrs)
+            distr += list(coined_distr[i] * np.array([1 / deg_e]*deg_e))
+        return distr, nbrs
+
     def signed_measure(self, basis_from:Basis, basis_to:Basis):
         x, source_nbr = self.get_distr(basis_from)
         y, target_nbr = self.get_distr(basis_to)
