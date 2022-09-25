@@ -3,11 +3,12 @@ from networkx import fruchterman_reingold_layout as layout
 import matplotlib.pyplot as plt
 import ot
 import numpy as np
-from pprint import pprint
-Basis = tuple[int,int]
+import networkx as nx
+
+Basis = Edge = tuple[int,int]
 class HyperGraph():
     # bases are pairs of node and edge (node, edge)
-    def __init__(self, edges:list[list[int]]):
+    def __init__(self, edges: list[Edge]):
         self.g =  Hypergraph(edges)
         self.edges = edges
         self.bases = [(node, edge) for edge, nodes in enumerate(edges) for node in nodes ]
@@ -66,6 +67,18 @@ class HyperGraph():
         key = (str(basis_from[0])+", "+str(self.edges[basis_from[1]]) + " -> "+ str(basis_to[0]) + ", "+ str(self.edges[basis_to[1]]))
         output[key]= 1 - ot.emd2(np.array(x), np.array(y), d) / self.distance(basis_from,basis_to)   # type: ignore
         return output
+    
+    def ricci_from_arcs(self, edge_from: Edge, edge_to: Edge):
+        return self.ricci(self.to_basis(edge_from), self.to_basis(edge_to))
+
+    def to_basis(self, edge: Edge):
+        try:
+            return (edge[1], self.edges.index(edge))  
+        except ValueError:
+            try:
+                return (edge[1], self.edges.index((edge[1], edge[0])))
+            except ValueError:
+                raise ValueError('Invalid basis')        
 
     def basis_check(self, basis: Basis):
         try:
@@ -79,40 +92,38 @@ class HyperGraph():
     def plot(self):
         drawing.draw(self.g)
 
-def comp_graph():
-    node = list(range(0, 4))
-    return [[a, b] for idx, a in enumerate(node) for b in node[idx + 1 :]]
+def comp_graph(node: int):
+    return nx.complete_graph(node).edges
+
+def ladder(node: int):
+    return nx.ladder_graph(node)
 
 def bin_tree(depth: int):
-    edges = [[0, 1], [0, 2]]
-    for d in range(depth):
-        for i in range(2 ** d - 1, 2 ** (d + 1) - 1):
-            edges += [[i, 2 * i + 1], [i, 2 * i + 2]]
-    return edges
-
-def line(length: int):
-    edges = []
-    for i in range(length - 1):
-        edges.append([i, i + 1])
-    return edges
-
-print(line(4))
-H = HyperGraph(comp_graph())
-
-H.list_edges(0)
-pprint(H.ricci((1, 0),(0, 0)))
-pprint(H.ricci((1, 0),(2, 3)))
-
-H = HyperGraph(bin_tree(5))
-H.list_edges(3)
-H.list_edges(7)
-pprint(H.ricci((3, 8),(7, 16)))
-
-H = HyperGraph(line(10))
-H.list_edges(3)
-H.list_edges(4)
-pprint(H.ricci((3, 2),(4, 3)))
-
-
-
+    return nx.balanced_tree(2, depth)
     
+def line(length: int):
+    return nx.path_graph(length)
+
+def hyper_cube(dim: int):
+    return nx.hypercube_graph(dim)
+
+def cycle(node: int):
+    return nx.cycle_graph(node)
+
+def triangular(m: int, n: int):
+    return nx.triangular_lattice_graph(m, n)
+
+def lattice(m: int, n: int):
+    return nx.grid_graph(dim=(1, m, n))
+
+def wheel_graph(dim: int):
+    return nx.wheel_graph(dim)
+
+G = wheel_graph(5)
+nx.draw(G, with_labels = True)
+plt.show()
+print(G.edges)
+H = HyperGraph(list(G.edges))
+H.list_edges(0)
+H.list_edges(1)
+print(H.ricci_from_arcs((0, 1), (1, 0)))
