@@ -86,3 +86,11 @@ class UndirectedEdgeGraph:
     def plot(self):
         nx.draw(self.graph, with_labels=True, connectionstyle="arc3, rad = 0.1")
         plt.show()
+
+
+
+#G = nx.complete_graph(3)
+#G_D = UndirectedEdgeGraph(G.edges)
+#print(G_D.compute_ricci_curvature_between_edge_undirected())
+# get_distribution((1,2),G)
+# ([0, 0.5, 0.5], [(2, 1), (0, 1), (0, 2)])

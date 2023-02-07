@@ -1,3 +1,4 @@
+from typing import List, Tuple
 from hypernetx import Hypergraph, drawing
 from networkx import fruchterman_reingold_layout as layout
 import matplotlib.pyplot as plt
@@ -5,19 +6,38 @@ import ot
 import numpy as np
 import networkx as nx
 
-Basis = Edge = tuple[int,int]
+#Basis = Edge = tuple[int,int]
+Edge = Tuple[int,int]
+Basis = Tuple[int,Edge]
 class HyperGraph():
     # bases are pairs of node and edge (node, edge)
-    def __init__(self, edges: list[Edge]):
+    def __init__(self, edges: List[Edge]):
         self.g =  Hypergraph(edges)
         self.edges = edges
-        self.bases = [(node, edge) for edge, nodes in enumerate(edges) for node in nodes ]
+        #self.bases = [(node, edge) for edge, nodes in enumerate(edges) for node in nodes ]
+        self.bases = []
+        for e in edges:
+            for i in range(len(e)):
+                self.bases.append((e[i],e))
         
     def distance(self, basis_from: Basis, basis_to: Basis):
         if basis_from == basis_to:
             return 0
-        adj_edges = [i for i in range(len(self.edges)) if basis_from[0] in self.edges[i]]
-        return min([self.g.edge_distance(str(edge), self.g.edges[str(basis_to[1])]) for edge in adj_edges]) + 1  # type: ignore
+        #adj_edges = [i for i in range(len(self.edges)) if basis_from[0] in self.edges[i]]
+        #return min([self.g.edge_distance(str(edge), self.g.edges[str(basis_to[1])]) for edge in adj_edges]) + 1  # type: ignore
+        #
+        #adj_edges = [i for i in range(len(self.edges)) if basis_from[0] in self.edges[i]]
+        #return min([self.g.edge_distance(str(edge), self.g.edges[str(basis_to[1])]) for edge in adj_edges]) + 1  # type: ignore
+        else:
+            adj_nodes = []
+            #basis_to[1] represents the nodes contained in target edge
+            for i in range(len(basis_to[1])):
+                adj_nodes.append(basis_to[1][i])
+            #definition of distance 
+            l = self.g.distance(basis_from[0], adj_nodes[0])
+            for v in adj_nodes:
+                l = min(l,self.g.distance(basis_from[0],v))
+            return (l + 1)
 
     def get_distr(self, basis: Basis):
         (node, _) = basis; 
@@ -56,8 +76,42 @@ class HyperGraph():
                 if y[i] < 0:
                     source_nbr.append(target_nbr.pop(i))
                     x.append(-y.pop(i))
-        return (x, source_nbr), (y, target_nbr)       
+        return (x, source_nbr), (y, target_nbr)  
 
+    def signed_wasserstein(self, basis_from: Basis, basis_to: Basis):
+        self.basis_check(basis_from)
+        self.basis_check(basis_to)
+        (x, source_nbr), (y, target_nbr) = self.signed_measure(basis_from, basis_to)
+        d=[[self.distance(snbr, tnbr) for tnbr in target_nbr] for snbr in source_nbr]
+        return ot.emd2(np.array(x), np.array(y), d) 
+
+    def ricci(self, basis_from: Basis, basis_to: Basis):
+        self.basis_check(basis_from)
+        self.basis_check(basis_to)
+        (x, source_nbr), (y, target_nbr) = self.signed_measure(basis_from, basis_to)
+        d=[[self.distance(snbr, tnbr) for tnbr in target_nbr] for snbr in source_nbr]
+        return 1 - ot.emd2(np.array(x), np.array(y), d) / self.distance(basis_from,basis_to)    
+
+    def correlated_random_walks_measure(self, basis_from: Basis, basis_to: Basis):
+        x, source_nbr = self.get_distr_classic(basis_from)
+        y, target_nbr = self.get_distr_classic(basis_to)
+        return (x, source_nbr), (y, target_nbr)
+
+    def wasserstein_for_correlated(self, basis_from: Basis, basis_to: Basis):
+        self.basis_check(basis_from)
+        self.basis_check(basis_to)
+        (x, source_nbr), (y, target_nbr) = self.correlated_random_walks_measure(basis_from, basis_to)
+        d=[[self.distance(snbr, tnbr) for tnbr in target_nbr] for snbr in source_nbr]
+        return ot.emd2(np.array(x), np.array(y), d) 
+
+    def correlated_ricci(self, basis_from: Basis, basis_to: Basis):
+        self.basis_check(basis_from)
+        self.basis_check(basis_to)
+        (x, source_nbr), (y, target_nbr) = self.correlated_random_walks_measure(basis_from, basis_to)
+        d=[[self.distance(snbr, tnbr) for tnbr in target_nbr] for snbr in source_nbr]
+        return 1 - ot.emd2(np.array(x), np.array(y), d) / self.distance(basis_from,basis_to)  
+         
+    """
     def ricci(self, basis_from: Basis, basis_to: Basis):
         self.basis_check(basis_from)
         self.basis_check(basis_to)
@@ -67,7 +121,7 @@ class HyperGraph():
         key = (str(basis_from[0])+", "+str(self.edges[basis_from[1]]) + " -> "+ str(basis_to[0]) + ", "+ str(self.edges[basis_to[1]]))
         output[key]= 1 - ot.emd2(np.array(x), np.array(y), d) / self.distance(basis_from,basis_to)   # type: ignore
         return output
-    
+    """
     def ricci_from_arcs(self, edge_from: Edge, edge_to: Edge):
         return self.ricci(self.to_basis(edge_from), self.to_basis(edge_to))
 
@@ -119,11 +173,11 @@ def lattice(m: int, n: int):
 def wheel_graph(dim: int):
     return nx.wheel_graph(dim)
 
-G = wheel_graph(5)
-nx.draw(G, with_labels = True)
-plt.show()
-print(G.edges)
-H = HyperGraph(list(G.edges))
-H.list_edges(0)
-H.list_edges(1)
-print(H.ricci_from_arcs((0, 1), (1, 0)))
+#G = wheel_graph(5)
+#nx.draw(G, with_labels = True)
+#plt.show()
+#print(G.edges)
+#H = HyperGraph(list(G.edges))
+#H.list_edges(0)
+#H.list_edges(1)
+#print(H.ricci_from_arcs((0, 1), (1, 0)))
